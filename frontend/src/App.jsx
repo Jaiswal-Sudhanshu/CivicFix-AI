@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import {
   Leaf, Camera, Send, CheckCircle2, Shield, FileText,
   Activity, Radio, Sparkles, User, LogOut, Home, LogIn, ChevronDown,
-  ShieldCheck, RefreshCw, LogIn as LoginIcon
+  ShieldCheck, RefreshCw, LogIn as LoginIcon,
+  Menu, X, BarChart3
 } from 'lucide-react';
 import { INITIAL_COMPLAINTS } from './mockData';
 import HeroSection from './components/HeroSection';
