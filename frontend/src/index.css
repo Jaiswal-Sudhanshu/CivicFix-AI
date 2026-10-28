@@ -1251,3 +1251,104 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   POP DIALOG BOX (Sign In / Sign Up Modal)
+   ========================================================================== */
+
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(24, 33, 21, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+  animation: fadeInOverlay 0.18s ease-out forwards;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.auth-pop-dialog {
+  background: #ffffff;
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 48px rgba(24, 33, 21, 0.28), 0 4px 12px rgba(24, 33, 21, 0.12);
+  width: 100%;
+  max-width: 490px;
+  max-height: 92vh;
+  overflow-y: auto;
+  position: relative;
+  padding: 28px 30px;
+  animation: popDialogIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes popDialogIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.auth-close-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface-sunken);
+  border: 1px solid var(--border-subtle);
+  color: var(--deep-olive);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  z-index: 10;
+}
+
+.auth-close-btn:hover {
+  background: var(--deep-olive);
+  color: #ffffff;
+  transform: rotate(90deg);
+}
+
+.dialog-mode-tabs {
+  display: flex;
+  background: var(--bg-surface-sunken);
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  margin-bottom: 20px;
+  border: 1px solid var(--border-subtle);
+}
+
+.dialog-tab-btn {
+  flex: 1;
+  padding: 8px 16px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+
+.dialog-tab-btn.active {
+  background: #ffffff;
+  color: var(--deep-olive);
+  box-shadow: 0 2px 6px rgba(46, 61, 40, 0.12);
+}

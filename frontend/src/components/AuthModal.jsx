@@ -61,9 +61,6 @@ export default function AuthModal({
   // Selected Actor Role: 'citizen' | 'official'
   const [selectedRole, setSelectedRole] = useState('citizen');
 
-  // Animated Splash Transition when opening modal
-  const [showAuthSplash, setShowAuthSplash] = useState(true);
-
   // Form Inputs
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -84,21 +81,26 @@ export default function AuthModal({
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
-  // Synchronize mode when initialMode changes
+  // Synchronize mode when initialMode changes & reset states
   useEffect(() => {
     if (isOpen) {
       const targetMode = initialMode === 'signup' ? 'signup' : 'login';
       setMode(targetMode);
-      setShowAuthSplash(true);
       setError('');
       setNotice('');
-      
-      const timer = setTimeout(() => {
-        setShowAuthSplash(false);
-      }, 950);
-      return () => clearTimeout(timer);
     }
   }, [isOpen, initialMode]);
+
+  // Handle ESC key to close pop dialog
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   // Mode switch handler with URL callback
   const handleSwitchMode = (newMode) => {
@@ -263,7 +265,6 @@ export default function AuthModal({
           avatar: fullName.substring(0, 2).toUpperCase()
         };
 
-        // Add to local mock database for session
         MOCK_ACCOUNTS.officials.push({
           ...newOfficialUser,
           password: password
@@ -333,420 +334,400 @@ export default function AuthModal({
   };
 
   return (
-    <div className="auth-overlay" onClick={(e) => {
-      if (e.target === e.currentTarget) onClose();
-    }}>
-      {/* 1. ANIMATED CIVIC SPLASH SCREEN (Runs smoothly on open) */}
-      {showAuthSplash ? (
-        <div style={{ textAlign: 'center', color: '#ffffff', animation: 'modalSlideUp 0.3s ease forwards' }}>
-          <div style={{ position: 'relative', width: '110px', height: '110px', margin: '0 auto 20px' }}>
-            <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(169, 184, 135, 0.25)', animation: 'splashPulse 1.2s infinite' }} />
-            <div style={{ position: 'absolute', inset: '10px', borderRadius: '50%', background: 'var(--deep-olive)', border: '2.5px solid var(--sage-green)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}>
-              <Leaf size={40} style={{ color: 'var(--sage-green)' }} />
-            </div>
+    <div 
+      className="auth-overlay" 
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      {/* ======================================================================
+          INSTANT POP DIALOG BOX CARD
+          ====================================================================== */}
+      <div className="auth-pop-dialog" role="dialog" aria-modal="true">
+        {/* Close (X) Button */}
+        <button 
+          type="button"
+          className="auth-close-btn"
+          onClick={onClose}
+          title="Close dialog (Esc)"
+        >
+          <X size={16} />
+        </button>
+
+        {/* Dialog Header with Brand Leaf */}
+        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+          <div style={{ 
+            width: '42px', 
+            height: '42px', 
+            borderRadius: '50%', 
+            background: 'var(--deep-olive)', 
+            color: 'var(--soft-white)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            margin: '0 auto 8px',
+            boxShadow: '0 4px 12px rgba(46, 61, 40, 0.2)' 
+          }}>
+            <Leaf size={22} style={{ color: 'var(--sage-green)' }} />
           </div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--soft-white)', letterSpacing: '-0.02em', marginBottom: '6px' }}>
-            CivicFix AI
+          
+          <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--deep-olive)', marginBottom: '3px' }}>
+            {mode === 'forgot' || mode === 'otp_verify' || mode === 'reset_success'
+              ? 'Password Recovery'
+              : 'CivicFix AI Gateway'}
           </h2>
-          <div style={{ fontSize: '0.85rem', color: 'var(--sage-green)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            Lucknow Urban Governance Gateway
-          </div>
-          <div style={{ fontSize: '0.78rem', color: 'rgba(232, 233, 223, 0.7)', marginTop: '8px' }}>
-            Establishing secure role identity & dispatch session...
-          </div>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            {mode === 'forgot' || mode === 'otp_verify' || mode === 'reset_success'
+              ? 'Recover access to your civic or municipal account'
+              : 'Lucknow Urban Governance & AI Verification Portal'}
+          </p>
         </div>
-      ) : (
-        /* 2. AUTH CARD */
-        <div className="card-white auth-card" style={{ maxWidth: '520px', padding: '30px 32px' }}>
-          {/* Close Button */}
-          <button 
-            type="button"
-            className="auth-close-btn"
-            onClick={onClose}
-            style={{ background: 'var(--bg-surface-sunken)', border: 'none', cursor: 'pointer', color: 'var(--deep-olive)' }}
-            title="Close modal"
-          >
-            <X size={18} />
-          </button>
 
-          {/* BESPOKE ANIMATED CIVIC & CLEANLINESS LOGO GRAPHIC */}
-          <div style={{ textAlign: 'center', marginBottom: '18px' }}>
-            <svg viewBox="0 0 160 80" style={{ width: '120px', height: '60px', margin: '0 auto', display: 'block' }}>
-              <circle cx="80" cy="40" r="36" fill="var(--sage-green-light)" opacity="0.6" />
-              <path d="M42 62 L42 42 L52 42 L52 62 Z" fill="var(--deep-olive-muted)" opacity="0.4" />
-              <path d="M54 62 L54 34 L66 34 L66 62 Z" fill="var(--deep-olive-muted)" opacity="0.5" />
-              <path d="M94 62 L94 38 L106 38 L106 62 Z" fill="var(--deep-olive-muted)" opacity="0.5" />
-              <path d="M108 62 L108 46 L118 46 L118 62 Z" fill="var(--deep-olive-muted)" opacity="0.4" />
-              <circle cx="80" cy="38" r="24" fill="var(--deep-olive)" />
-              <path d="M80 24 C72 24 66 30 66 38 C66 48 80 54 80 54 C80 54 94 48 94 38 C94 30 88 24 80 24 Z" fill="none" stroke="var(--sage-green)" strokeWidth="1.5" />
-              <path d="M80 44 C80 34 88 30 90 28 C90 34 86 42 80 44 Z" fill="var(--sage-green)" />
-              <path d="M80 44 C80 36 74 33 72 31 C72 36 76 42 80 44 Z" fill="var(--soft-white)" opacity="0.8" />
-              <line x1="30" y1="62" x2="130" y2="62" stroke="var(--deep-olive)" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-
-            <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--deep-olive)', marginBottom: '3px' }}>
-              {mode === 'login' ? 'Sign In to CivicFix AI' : mode === 'signup' ? 'Create CivicFix Account' : 'Password Recovery'}
-            </h2>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              {mode === 'forgot' || mode === 'otp_verify' || mode === 'reset_success'
-                ? 'Recover your account to continue civic reporting or crew dispatching'
-                : 'Select your civic role to access personalized dashboards'}
-            </p>
+        {/* POP DIALOG MODE SWITCHER TABS (Sign In vs Sign Up) */}
+        {(mode === 'login' || mode === 'signup') && (
+          <div className="dialog-mode-tabs">
+            <button
+              type="button"
+              className={`dialog-tab-btn ${mode === 'login' ? 'active' : ''}`}
+              onClick={() => handleSwitchMode('login')}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              className={`dialog-tab-btn ${mode === 'signup' ? 'active' : ''}`}
+              onClick={() => handleSwitchMode('signup')}
+            >
+              Create Account
+            </button>
           </div>
+        )}
 
-          {/* FORGOT PASSWORD WORKFLOW */}
-          {(mode === 'forgot' || mode === 'otp_verify' || mode === 'reset_success') ? (
-            <form onSubmit={handleFormSubmit}>
-              {notice && (
-                <div style={{ background: 'var(--sage-green-light)', border: '1px solid var(--sage-green)', color: 'var(--deep-olive)', padding: '10px 14px', borderRadius: 'var(--radius-md)', fontSize: '0.82rem', marginBottom: '14px', fontWeight: 600 }}>
-                  <Check size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: '-2px' }} />
-                  {notice}
+        {/* FORGOT PASSWORD WORKFLOW */}
+        {(mode === 'forgot' || mode === 'otp_verify' || mode === 'reset_success') ? (
+          <form onSubmit={handleFormSubmit}>
+            {notice && (
+              <div style={{ background: 'var(--sage-green-light)', border: '1px solid var(--sage-green)', color: 'var(--deep-olive)', padding: '10px 14px', borderRadius: 'var(--radius-md)', fontSize: '0.82rem', marginBottom: '14px', fontWeight: 600 }}>
+                <Check size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: '-2px' }} />
+                {notice}
+              </div>
+            )}
+
+            {mode === 'forgot' && (
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '0.84rem' }}>Registered Email or Phone</label>
+                <input 
+                  type="text"
+                  className="mockup-input"
+                  placeholder="e.g. priya.sharma@lucknow.in"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                <div style={{ marginTop: '16px' }}>
+                  <button type="submit" className="btn-olive" style={{ width: '100%', padding: '11px' }}>
+                    Send Recovery Code
+                  </button>
                 </div>
-              )}
+              </div>
+            )}
 
-              {mode === 'forgot' && (
+            {mode === 'otp_verify' && (
+              <div>
                 <div className="form-group">
-                  <label className="form-label" style={{ fontSize: '0.84rem' }}>Registered Email or Phone</label>
+                  <label className="form-label" style={{ fontSize: '0.84rem' }}>Enter 4-Digit Verification OTP</label>
                   <input 
                     type="text"
                     className="mockup-input"
-                    placeholder="e.g. priya.sharma@lucknow.in"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter 4291"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    style={{ letterSpacing: '4px', fontSize: '1.2rem', textAlign: 'center', fontFamily: 'var(--font-mono)' }}
                   />
-                  <div style={{ marginTop: '16px' }}>
-                    <button type="submit" className="btn-olive" style={{ width: '100%', padding: '12px' }}>
-                      Send Recovery Code
-                    </button>
-                  </div>
                 </div>
-              )}
-
-              {mode === 'otp_verify' && (
-                <div>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '0.84rem' }}>Enter 4-Digit Verification OTP</label>
-                    <input 
-                      type="text"
-                      className="mockup-input"
-                      placeholder="Enter 4291"
-                      maxLength={6}
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
-                      style={{ letterSpacing: '4px', fontSize: '1.2rem', textAlign: 'center', fontFamily: 'var(--font-mono)' }}
-                    />
-                  </div>
-                  <button type="submit" className="btn-olive" style={{ width: '100%', padding: '12px' }}>
-                    Verify OTP Code
-                  </button>
-                </div>
-              )}
-
-              {mode === 'reset_success' && (
-                <div>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '0.84rem' }}>New Password</label>
-                    <input 
-                      type="password"
-                      className="mockup-input"
-                      placeholder="••••••••"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '0.84rem' }}>Confirm New Password</label>
-                    <input 
-                      type="password"
-                      className="mockup-input"
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                    />
-                  </div>
-                  <button type="submit" className="btn-olive" style={{ width: '100%', padding: '12px' }}>
-                    Reset Password & Sign In
-                  </button>
-                </div>
-              )}
-
-              {error && (
-                <div style={{ color: 'var(--status-high)', fontSize: '0.82rem', marginTop: '10px' }}>
-                  {error}
-                </div>
-              )}
-
-              <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                <button 
-                  type="button" 
-                  onClick={() => handleSwitchMode('login')}
-                  className="btn-outline-olive" 
-                  style={{ padding: '6px 14px', fontSize: '0.8rem' }}
-                >
-                  <ArrowLeft size={14} /> Back to Sign In
+                <button type="submit" className="btn-olive" style={{ width: '100%', padding: '11px' }}>
+                  Verify OTP Code
                 </button>
               </div>
-            </form>
-          ) : (
-            /* STANDARD LOGIN / SIGNUP WITH ROLE SELECTION */
-            <div>
-              {/* Role Selection Cards */}
-              <div style={{ marginBottom: '16px' }}>
-                <label className="form-label" style={{ marginBottom: '8px', fontSize: '0.82rem', fontWeight: 700 }}>
-                  Choose Your Account Type:
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  {/* Citizen Card */}
-                  <div 
-                    style={{
-                      border: `2px solid ${selectedRole === 'citizen' ? 'var(--deep-olive)' : 'var(--border-subtle)'}`,
-                      background: selectedRole === 'citizen' ? 'var(--sage-green-light)' : 'var(--bg-surface-raised)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '12px 10px',
-                      cursor: 'pointer',
-                      transition: 'all var(--transition-fast)'
-                    }}
-                    onClick={() => {
-                      setSelectedRole('citizen');
-                      setError('');
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--deep-olive)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Camera size={13} />
-                      </div>
-                      <strong style={{ fontSize: '0.88rem', color: 'var(--deep-olive)' }}>Citizen</strong>
-                    </div>
-                    <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: '1.3' }}>
-                      Report civic defects with camera photo & track resolution.
-                    </p>
-                  </div>
+            )}
 
-                  {/* Official Card */}
-                  <div 
-                    style={{
-                      border: `2px solid ${selectedRole === 'official' ? 'var(--deep-olive)' : 'var(--border-subtle)'}`,
-                      background: selectedRole === 'official' ? 'var(--sage-green-light)' : 'var(--bg-surface-raised)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '12px 10px',
-                      cursor: 'pointer',
-                      transition: 'all var(--transition-fast)'
-                    }}
-                    onClick={() => {
-                      setSelectedRole('official');
-                      setError('');
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--deep-olive)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <ShieldCheck size={13} />
-                      </div>
-                      <strong style={{ fontSize: '0.88rem', color: 'var(--deep-olive)' }}>Official (LDA)</strong>
-                    </div>
-                    <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: '1.3' }}>
-                      Review AI triage, approve requests & dispatch crews.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Instant 1-Click Role Login for Quick Testing */}
-              {mode === 'login' && (
-                <div style={{ marginBottom: '14px' }}>
-                  <button 
-                    type="button" 
-                    className="btn-olive"
-                    style={{ width: '100%', padding: '10px 14px', fontSize: '0.86rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                    onClick={() => handleRoleQuickLogin(selectedRole)}
-                  >
-                    <span>Quick Login as {selectedRole === 'citizen' ? 'Citizen (Priya Sharma)' : 'Official Authority (Er. Vikramaditya)'}</span>
-                    <ArrowRight size={15} />
-                  </button>
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', marginTop: '6px' }}>
-                    <button
-                      type="button"
-                      onClick={() => handleFillDemo('citizen')}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.74rem', textDecoration: 'underline', cursor: 'pointer' }}
-                    >
-                      Fill Citizen Demo
-                    </button>
-                    <span style={{ color: 'var(--border-subtle)' }}>•</span>
-                    <button
-                      type="button"
-                      onClick={() => handleFillDemo('official')}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.74rem', textDecoration: 'underline', cursor: 'pointer' }}
-                    >
-                      Fill Official Demo
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Official Registration Notice Banner */}
-              {mode === 'signup' && selectedRole === 'official' && (
-                <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', padding: '10px 12px', borderRadius: 'var(--radius-sm)', marginBottom: '14px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                  <AlertTriangle size={18} style={{ color: '#d97706', flexShrink: 0, marginTop: '2px' }} />
-                  <div style={{ fontSize: '0.76rem', color: '#92400e', lineHeight: '1.4' }}>
-                    <strong>Administrative Clearance Required:</strong> Official Authority access is strictly reserved for Lucknow Development Authority (LDA) personnel. New officer profiles require badge authentication before municipal crew dispatch rights are granted.
-                  </div>
-                </div>
-              )}
-
-              {/* Form */}
-              <form onSubmit={handleFormSubmit}>
-                {mode === 'signup' && (
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '0.82rem' }}>Full Name *</label>
-                    <input 
-                      type="text"
-                      className="mockup-input"
-                      placeholder={selectedRole === 'citizen' ? 'e.g. Rahul Verma' : 'e.g. Er. Vikramaditya Singh'}
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                    />
-                  </div>
-                )}
-
-                {/* Role-Specific Sign Up Fields */}
-                {mode === 'signup' && selectedRole === 'official' && (
-                  <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontSize: '0.82rem' }}>Official Designation *</label>
-                        <input 
-                          type="text"
-                          className="mockup-input"
-                          placeholder="e.g. Executive Engineer"
-                          value={designation}
-                          onChange={(e) => setDesignation(e.target.value)}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontSize: '0.82rem' }}>LDA Badge / Employee ID *</label>
-                        <input 
-                          type="text"
-                          className="mockup-input"
-                          placeholder="e.g. LDA-EMP-8492"
-                          value={badgeId}
-                          onChange={(e) => setBadgeId(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontSize: '0.82rem' }}>Department / Wing *</label>
-                      <select 
-                        className="mockup-input"
-                        value={department}
-                        onChange={(e) => setDepartment(e.target.value)}
-                      >
-                        <option value="Roads & Infrastructure Wing">Roads & Infrastructure Wing</option>
-                        <option value="Solid Waste Management Division">Solid Waste Management Division</option>
-                        <option value="Electrical & Street Lighting Wing">Electrical & Street Lighting Wing</option>
-                        <option value="Urban Drainage & Desilting Wing">Urban Drainage & Desilting Wing</option>
-                        <option value="Park Maintenance & Greenery Wing">Park Maintenance & Greenery Wing</option>
-                      </select>
-                    </div>
-                  </>
-                )}
-
-                {mode === 'signup' && selectedRole === 'citizen' && (
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '0.82rem' }}>Locality / Municipal Ward</label>
-                    <input 
-                      type="text"
-                      className="mockup-input"
-                      placeholder="e.g. Hazratganj, Ward 14"
-                      value={locality}
-                      onChange={(e) => setLocality(e.target.value)}
-                    />
-                  </div>
-                )}
-
+            {mode === 'reset_success' && (
+              <div>
                 <div className="form-group">
-                  <label className="form-label" style={{ fontSize: '0.82rem' }}>
-                    {selectedRole === 'official' ? 'Official Govt Email (@lda.up.gov.in) *' : 'Email Address *'}
-                  </label>
-                  <input 
-                    type="email"
-                    className="mockup-input"
-                    placeholder={selectedRole === 'citizen' ? 'priya.sharma@lucknow.in' : 'vikram.singh@lda.up.gov.in'}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <label className="form-label" style={{ fontSize: '0.82rem', margin: 0 }}>Password *</label>
-                    {mode === 'login' && (
-                      <button 
-                        type="button" 
-                        onClick={() => {
-                          setMode('forgot');
-                          setError('');
-                          setNotice('');
-                        }}
-                        style={{ background: 'none', border: 'none', color: 'var(--deep-olive)', fontSize: '0.74rem', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
-                      >
-                        Forgot Password?
-                      </button>
-                    )}
-                  </div>
+                  <label className="form-label" style={{ fontSize: '0.84rem' }}>New Password</label>
                   <input 
                     type="password"
                     className="mockup-input"
                     placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
                   />
                 </div>
-
-                {error && (
-                  <div style={{ color: 'var(--status-high)', fontSize: '0.8rem', marginBottom: '12px', background: '#fee2e2', padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid #f87171' }}>
-                    {error}
-                  </div>
-                )}
-
-                <button 
-                  type="submit" 
-                  className="btn-olive" 
-                  style={{ width: '100%', padding: '11px', fontSize: '0.9rem' }}
-                >
-                  {mode === 'login' ? `Sign In as ${selectedRole === 'citizen' ? 'Citizen' : 'Official Authority'}` : 'Submit Registration'}
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: '0.84rem' }}>Confirm New Password</label>
+                  <input 
+                    type="password"
+                    className="mockup-input"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+                <button type="submit" className="btn-olive" style={{ width: '100%', padding: '11px' }}>
+                  Reset Password & Sign In
                 </button>
-              </form>
+              </div>
+            )}
 
-              {/* Mode Toggle with URL-aware Switcher */}
-              <div style={{ textAlign: 'center', marginTop: '14px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                {mode === 'login' ? (
-                  <span>
-                    New to CivicFix AI?{' '}
-                    <button 
-                      type="button" 
-                      onClick={() => handleSwitchMode('signup')}
-                      style={{ background: 'none', border: 'none', color: 'var(--deep-olive)', fontWeight: 700, cursor: 'pointer' }}
-                    >
-                      Create an Account
-                    </button>
-                  </span>
-                ) : (
-                  <span>
-                    Already have an account?{' '}
-                    <button 
-                      type="button" 
-                      onClick={() => handleSwitchMode('login')}
-                      style={{ background: 'none', border: 'none', color: 'var(--deep-olive)', fontWeight: 700, cursor: 'pointer' }}
-                    >
-                      Sign In
-                    </button>
-                  </span>
-                )}
+            {error && (
+              <div style={{ color: 'var(--status-high)', fontSize: '0.8rem', marginTop: '10px' }}>
+                {error}
+              </div>
+            )}
+
+            <div style={{ textAlign: 'center', marginTop: '16px' }}>
+              <button 
+                type="button" 
+                onClick={() => handleSwitchMode('login')}
+                className="btn-outline-olive" 
+                style={{ padding: '6px 14px', fontSize: '0.78rem' }}
+              >
+                <ArrowLeft size={13} /> Back to Sign In
+              </button>
+            </div>
+          </form>
+        ) : (
+          /* STANDARD SIGN IN / SIGN UP POP DIALOG FORM */
+          <div>
+            {/* Role Selection Cards */}
+            <div style={{ marginBottom: '16px' }}>
+              <label className="form-label" style={{ marginBottom: '8px', fontSize: '0.8rem', fontWeight: 700 }}>
+                Select Role to Continue:
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                {/* Citizen Card */}
+                <div 
+                  style={{
+                    border: `2px solid ${selectedRole === 'citizen' ? 'var(--deep-olive)' : 'var(--border-subtle)'}`,
+                    background: selectedRole === 'citizen' ? 'var(--sage-green-light)' : 'var(--bg-surface-raised)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '10px',
+                    cursor: 'pointer',
+                    transition: 'all var(--transition-fast)'
+                  }}
+                  onClick={() => {
+                    setSelectedRole('citizen');
+                    setError('');
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--deep-olive)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Camera size={12} />
+                    </div>
+                    <strong style={{ fontSize: '0.86rem', color: 'var(--deep-olive)' }}>Citizen</strong>
+                  </div>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: '1.3' }}>
+                    Snap photos, geotag & track civic complaints.
+                  </p>
+                </div>
+
+                {/* Official Card */}
+                <div 
+                  style={{
+                    border: `2px solid ${selectedRole === 'official' ? 'var(--deep-olive)' : 'var(--border-subtle)'}`,
+                    background: selectedRole === 'official' ? 'var(--sage-green-light)' : 'var(--bg-surface-raised)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '10px',
+                    cursor: 'pointer',
+                    transition: 'all var(--transition-fast)'
+                  }}
+                  onClick={() => {
+                    setSelectedRole('official');
+                    setError('');
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--deep-olive)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <ShieldCheck size={12} />
+                    </div>
+                    <strong style={{ fontSize: '0.86rem', color: 'var(--deep-olive)' }}>Official (LDA)</strong>
+                  </div>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: '1.3' }}>
+                    Verify AI evidence, audit & dispatch crews.
+                  </p>
+                </div>
               </div>
             </div>
-          )}
-        </div>
-      )}
+
+            {/* Instant 1-Click Role Login for Quick Testing */}
+            {mode === 'login' && (
+              <div style={{ marginBottom: '14px' }}>
+                <button 
+                  type="button" 
+                  className="btn-olive"
+                  style={{ width: '100%', padding: '9px 14px', fontSize: '0.84rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                  onClick={() => handleRoleQuickLogin(selectedRole)}
+                >
+                  <span>1-Click Login: {selectedRole === 'citizen' ? 'Citizen (Priya Sharma)' : 'Official (Er. Vikramaditya)'}</span>
+                  <ArrowRight size={14} />
+                </button>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', marginTop: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleFillDemo('citizen')}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.74rem', textDecoration: 'underline', cursor: 'pointer' }}
+                  >
+                    Fill Citizen Demo
+                  </button>
+                  <span style={{ color: 'var(--border-subtle)' }}>•</span>
+                  <button
+                    type="button"
+                    onClick={() => handleFillDemo('official')}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.74rem', textDecoration: 'underline', cursor: 'pointer' }}
+                  >
+                    Fill Official Demo
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Official Registration Notice Banner */}
+            {mode === 'signup' && selectedRole === 'official' && (
+              <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', padding: '8px 12px', borderRadius: 'var(--radius-sm)', marginBottom: '12px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                <AlertTriangle size={16} style={{ color: '#d97706', flexShrink: 0, marginTop: '2px' }} />
+                <div style={{ fontSize: '0.74rem', color: '#92400e', lineHeight: '1.3' }}>
+                  <strong>Official Authority Notice:</strong> Access is reserved for LDA municipal officers. Badge authentication is required for crew dispatch privileges.
+                </div>
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleFormSubmit}>
+              {mode === 'signup' && (
+                <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <label className="form-label" style={{ fontSize: '0.8rem' }}>Full Name *</label>
+                  <input 
+                    type="text"
+                    className="mockup-input"
+                    placeholder={selectedRole === 'citizen' ? 'e.g. Rahul Verma' : 'e.g. Er. Vikramaditya Singh'}
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {/* Role-Specific Sign Up Fields */}
+              {mode === 'signup' && selectedRole === 'official' && (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                    <div>
+                      <label className="form-label" style={{ fontSize: '0.8rem' }}>Designation *</label>
+                      <input 
+                        type="text"
+                        className="mockup-input"
+                        placeholder="e.g. Executive Engineer"
+                        value={designation}
+                        onChange={(e) => setDesignation(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label" style={{ fontSize: '0.8rem' }}>LDA Badge ID *</label>
+                      <input 
+                        type="text"
+                        className="mockup-input"
+                        placeholder="e.g. LDA-EMP-8492"
+                        value={badgeId}
+                        onChange={(e) => setBadgeId(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: '12px' }}>
+                    <label className="form-label" style={{ fontSize: '0.8rem' }}>Department / Wing *</label>
+                    <select 
+                      className="mockup-input"
+                      value={department}
+                      onChange={(e) => setDepartment(e.target.value)}
+                    >
+                      <option value="Roads & Infrastructure Wing">Roads & Infrastructure Wing</option>
+                      <option value="Solid Waste Management Division">Solid Waste Management Division</option>
+                      <option value="Electrical & Street Lighting Wing">Electrical & Street Lighting Wing</option>
+                      <option value="Urban Drainage & Desilting Wing">Urban Drainage & Desilting Wing</option>
+                      <option value="Park Maintenance & Greenery Wing">Park Maintenance & Greenery Wing</option>
+                    </select>
+                  </div>
+                </>
+              )}
+
+              {mode === 'signup' && selectedRole === 'citizen' && (
+                <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <label className="form-label" style={{ fontSize: '0.8rem' }}>Locality / Municipal Ward</label>
+                  <input 
+                    type="text"
+                    className="mockup-input"
+                    placeholder="e.g. Hazratganj, Ward 14"
+                    value={locality}
+                    onChange={(e) => setLocality(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <div className="form-group" style={{ marginBottom: '12px' }}>
+                <label className="form-label" style={{ fontSize: '0.8rem' }}>
+                  {selectedRole === 'official' ? 'Official Govt Email (@lda.up.gov.in) *' : 'Email Address *'}
+                </label>
+                <input 
+                  type="email"
+                  className="mockup-input"
+                  placeholder={selectedRole === 'citizen' ? 'priya.sharma@lucknow.in' : 'vikram.singh@lda.up.gov.in'}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <label className="form-label" style={{ fontSize: '0.8rem', margin: 0 }}>Password *</label>
+                  {mode === 'login' && (
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        setMode('forgot');
+                        setError('');
+                        setNotice('');
+                      }}
+                      style={{ background: 'none', border: 'none', color: 'var(--deep-olive)', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      Forgot Password?
+                    </button>
+                  )}
+                </div>
+                <input 
+                  type="password"
+                  className="mockup-input"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+
+              {error && (
+                <div style={{ color: 'var(--status-high)', fontSize: '0.78rem', marginBottom: '12px', background: '#fee2e2', padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid #f87171' }}>
+                  {error}
+                </div>
+              )}
+
+              <button 
+                type="submit" 
+                className="btn-olive" 
+                style={{ width: '100%', padding: '11px', fontSize: '0.88rem' }}
+              >
+                {mode === 'login' ? `Sign In as ${selectedRole === 'citizen' ? 'Citizen' : 'Official Authority'}` : 'Submit Registration'}
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
