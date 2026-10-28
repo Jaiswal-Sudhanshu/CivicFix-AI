@@ -1,7 +1,10 @@
 // CivicFix AI - Frontend Evidence & Geospatial Verification Engine
 // Communicates with FastAPI backend with graceful zero-failure client-side fallback
 
-const BACKEND_URL = "http://127.0.0.1:8000";
+const rawBackendUrl = import.meta.env?.VITE_BACKEND_URL || "http://127.0.0.1:8000";
+const BACKEND_URL = rawBackendUrl.startsWith("http://") || rawBackendUrl.startsWith("https://")
+  ? rawBackendUrl.replace(/\/$/, "")
+  : `https://${rawBackendUrl.replace(/\/$/, "")}`;
 
 /**
  * Calculates Haversine distance in meters between two lat/lon points
