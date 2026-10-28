@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Leaf, Camera, Send, CheckCircle2, Shield, FileText, 
+import React, { useState } from 'react';
+import {
+  Leaf, Camera, Send, CheckCircle2, Shield, FileText,
   Activity, Radio, Sparkles, User, LogOut, Home, LogIn, ChevronDown,
-  ShieldCheck, RefreshCw, LogIn as LoginIcon, Clock, Users, BarChart3,
-  Lock, AlertTriangle
+  ShieldCheck, RefreshCw, LogIn as LoginIcon
 } from 'lucide-react';
 import { INITIAL_COMPLAINTS } from './mockData';
 import HeroSection from './components/HeroSection';
@@ -14,107 +13,28 @@ import AuthModal from './components/AuthModal';
 import Footer from './components/Footer';
 
 export default function App() {
-  // Navigation tabs:
-  // Citizen: 'home' | 'report' | 'track' | 'impact' | 'about'
-  // Official: 'official_dashboard' | 'official_pending' | 'official_dispatch' | 'track' | 'impact'
+  // Navigation tabs: 'home' | 'report' | 'track' | 'impact' | 'about'
   const [activeTab, setActiveTab] = useState('home');
   const [complaints, setComplaints] = useState(INITIAL_COMPLAINTS);
   const [selectedTicketId, setSelectedTicketId] = useState('CFA-2026-001');
   const [geminiApiKey, setGeminiApiKey] = useState('');
 
-  // Authentication & Role State
-  // Role is strictly derived from authenticated session: 'citizen' | 'official' | null (guest)
+  // Dual Actor Role State: 'citizen' | 'official'
+  const [currentActor, setCurrentActor] = useState('citizen');
+
+  // Logged-in User State (defaults to Citizen for realistic onboarding)
   const [currentUser, setCurrentUser] = useState({
-    name: 'Priya Sharma',
+    name: 'Sudhanshu Jaiswal',
     role: 'Citizen Snapper (Level 3)',
     actorType: 'citizen',
     locality: 'Hazratganj, Lucknow',
-    email: 'priya.sharma@lucknow.in',
+    email: 'Sudhanshu.Jaiswal@lucknow.in',
     avatar: 'PS'
   });
 
-  // Auth Modal State with URL Synchronization
+  // Auth Modal State
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [authModalMode, setAuthModalMode] = useState('login'); // 'login' | 'signup'
-
-  // URL routing synchronization (handles browser back/forward and /signin /signup)
-  useEffect(() => {
-    const handleUrlChange = () => {
-      const path = window.location.pathname.toLowerCase();
-      const hash = window.location.hash.toLowerCase();
-
-      if (path === '/signin' || hash === '#/signin' || hash === '#signin') {
-        setAuthModalMode('login');
-        setIsAuthOpen(true);
-      } else if (path === '/signup' || hash === '#/signup' || hash === '#signup') {
-        setAuthModalMode('signup');
-        setIsAuthOpen(true);
-      } else {
-        setIsAuthOpen(false);
-      }
-    };
-
-    // Check on initial load
-    handleUrlChange();
-
-    // Listen for browser back / forward navigation
-    window.addEventListener('popstate', handleUrlChange);
-    return () => window.removeEventListener('popstate', handleUrlChange);
-  }, []);
-
-  // Open Auth Modal with Browser History push
-  const handleOpenAuth = (mode = 'login') => {
-    setAuthModalMode(mode);
-    setIsAuthOpen(true);
-    const targetUrl = mode === 'signup' ? '/signup' : '/signin';
-    try {
-      window.history.pushState({ auth: mode }, '', targetUrl);
-    } catch {
-      window.location.hash = targetUrl;
-    }
-  };
-
-  // Close Auth Modal and revert URL to root cleanly
-  const handleCloseAuth = () => {
-    setIsAuthOpen(false);
-    try {
-      if (window.location.pathname === '/signin' || window.location.pathname === '/signup') {
-        window.history.pushState({}, '', '/');
-      } else if (window.location.hash) {
-        window.history.pushState({}, '', window.location.pathname);
-      }
-    } catch {
-      window.location.hash = '';
-    }
-  };
-
-  // Handler for mode switch inside AuthModal (e.g. Sign In <-> Sign Up)
-  const handleAuthModeChange = (newMode) => {
-    setAuthModalMode(newMode);
-    const targetUrl = newMode === 'signup' ? '/signup' : '/signin';
-    try {
-      window.history.replaceState({ auth: newMode }, '', targetUrl);
-    } catch {
-      window.location.hash = targetUrl;
-    }
-  };
-
-  // Login Success Handler
-  const handleLoginSuccess = (user) => {
-    setCurrentUser(user);
-    handleCloseAuth();
-    if (user.actorType === 'official') {
-      setActiveTab('official_dashboard');
-    } else {
-      setActiveTab('report');
-    }
-  };
-
-  // Sign out function
-  const handleSignOut = () => {
-    setCurrentUser(null);
-    setActiveTab('home');
-  };
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Handler to add new grievance from Citizen Camera / Upload
   const handleNewComplaint = (newRecord) => {
@@ -124,21 +44,15 @@ export default function App() {
 
   // Handler for Official Authority to approve request and dispatch crew
   const handleUpdateStatus = (id, newStatus, assignedCrew) => {
-    // Authorization check
-    if (currentUser?.actorType !== 'official') {
-      alert('Access Denied: Only verified Official Authority (LDA) personnel can approve tenders and dispatch crews.');
-      return;
-    }
-
     setComplaints(prev => prev.map(c => {
       if (c.id === id) {
         const timeNow = "Just now";
         let stepTitle = "In Progress";
-        let stepDesc = `Approved by ${currentUser.name} (LDA). Dispatched crew: ${assignedCrew || 'Road Repair Quick Squad 3'}.`;
-        
+        let stepDesc = `Approved by Er. Vikramaditya Singh (LDA). Dispatched crew: ${assignedCrew || 'Road Repair Quick Squad 3'}.`;
+
         if (newStatus === 'resolved') {
           stepTitle = "Resolved";
-          stepDesc = `Field repair verified by ${currentUser.name}. Defect closed.`;
+          stepDesc = "Field repair verified by LDA Municipal Inspector. Defect closed.";
         }
 
         return {
@@ -160,350 +74,342 @@ export default function App() {
     setActiveTab('track');
   };
 
-  const pendingApprovalsCount = complaints.filter(c => c.status === 'under_review').length;
-  const currentActor = currentUser?.actorType || 'guest';
+  // Switch Actor Function
+  const handleSwitchActor = (actorType) => {
+    setCurrentActor(actorType);
+    if (actorType === 'official') {
+      setCurrentUser({
+        name: 'Er. Vikramaditya Singh',
+        role: 'LDA Senior Executive Officer',
+        actorType: 'official',
+        locality: 'LDA Headquarters, Gomti Nagar',
+        email: 'vikram.singh@lda.up.gov.in',
+        avatar: 'VS'
+      });
+      setActiveTab('impact');
+    } else {
+      setCurrentUser({
+        name: 'Priya Sharma',
+        role: 'Citizen Snapper (Level 3)',
+        actorType: 'citizen',
+        locality: 'Hazratganj, Lucknow',
+        email: 'priya.sharma@lucknow.in',
+        avatar: 'PS'
+      });
+      setActiveTab('report');
+    }
+  };
 
   return (
     <div className="app-container">
       {/* ==========================================================================
-          TOP NAVBAR WITH ROLE-SPECIFIC MENU BAR & AUTH CONTROLS
+          TOP ACTOR SWITCHER BANNER (Instant Role Selection)
+          ========================================================================== */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--deep-olive)', color: 'var(--soft-white)', padding: '6px 18px', borderRadius: 'var(--radius-pill)', marginBottom: '14px', fontSize: '0.82rem', flexWrap: 'wrap', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontWeight: 800, color: 'var(--sage-green)' }}>ACTIVE ROLE:</span>
+          <span>{currentActor === 'citizen' ? 'Citizen Snapper — Priya Sharma (Reporting with Camera)' : 'Official Authority — Er. Vikramaditya Singh (Approving & Dispatching Crews)'}</span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '0.76rem', opacity: 0.8 }}>Select Role:</span>
+          <button
+            type="button"
+            className="btn-olive"
+            style={{
+              background: currentActor === 'citizen' ? 'var(--sage-green)' : 'rgba(255,255,255,0.15)',
+              color: currentActor === 'citizen' ? 'var(--deep-olive)' : '#ffffff',
+              padding: '4px 12px',
+              fontSize: '0.78rem',
+              fontWeight: 800
+            }}
+            onClick={() => handleSwitchActor('citizen')}
+          >
+            <Camera size={13} />
+            <span>Citizen (Camera Snapper)</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn-olive"
+            style={{
+              background: currentActor === 'official' ? 'var(--sage-green)' : 'rgba(255,255,255,0.15)',
+              color: currentActor === 'official' ? 'var(--deep-olive)' : '#ffffff',
+              padding: '4px 12px',
+              fontSize: '0.78rem',
+              fontWeight: 800
+            }}
+            onClick={() => handleSwitchActor('official')}
+          >
+            <ShieldCheck size={13} />
+            <span>Official Authority (LDA Dispatch)</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ==========================================================================
+          TOP NAVBAR (Mockup Style)
+          ========================================================================== */}
+      {/* ==========================================================================
+          TOP NAVBAR (Mockup Style with Responsive Mobile Architecture)
           ========================================================================== */}
       <header className="mockup-navbar">
-        {/* Brand Logo */}
-        <div 
-          className="mockup-brand" 
-          onClick={() => setActiveTab(currentActor === 'official' ? 'official_dashboard' : 'home')}
-        >
+        {/* Logo */}
+        <div className="mockup-brand" onClick={() => { setActiveTab('home'); setIsMobileMenuOpen(false); }}>
           <div className="brand-icon-circle">
             <Leaf size={18} />
           </div>
           <span className="brand-name">CivicFix AI</span>
         </div>
 
-        {/* ======================================================================
-            ROLE-SPECIFIC SEPARATE MENU BARS ACCORDING TO USER'S ROLE
-            ====================================================================== */}
-        <nav className="mockup-nav-links">
-          {/* 1. CITIZEN MENU BAR */}
-          {currentActor === 'citizen' && (
-            <>
-              <button 
-                type="button" 
-                className={`nav-link-btn ${activeTab === 'home' ? 'active' : ''}`}
-                onClick={() => setActiveTab('home')}
-              >
-                Home
-              </button>
-              
-              <button 
-                type="button" 
-                className={`nav-link-btn ${activeTab === 'report' ? 'active' : ''}`}
-                onClick={() => setActiveTab('report')}
-              >
-                <Camera size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px' }} />
-                Snap & Report
-              </button>
+        {/* Mockup Nav Links: Home | Report | Track | Impact | About (Desktop) */}
+        <nav className="mockup-nav-links desktop-only">
+          <button
+            type="button"
+            className={`nav-link-btn ${activeTab === 'home' ? 'active' : ''}`}
+            onClick={() => setActiveTab('home')}
+          >
+            Home
+          </button>
 
-              <button 
-                type="button" 
-                className={`nav-link-btn ${activeTab === 'track' ? 'active' : ''}`}
-                onClick={() => setActiveTab('track')}
-              >
-                Track Complaints
-              </button>
+          <button
+            type="button"
+            className={`nav-link-btn ${activeTab === 'report' ? 'active' : ''}`}
+            onClick={() => setActiveTab('report')}
+          >
+            Report
+          </button>
 
-              <button 
-                type="button" 
-                className={`nav-link-btn ${activeTab === 'impact' ? 'active' : ''}`}
-                onClick={() => setActiveTab('impact')}
-              >
-                Community Impact
-              </button>
+          <button
+            type="button"
+            className={`nav-link-btn ${activeTab === 'track' ? 'active' : ''}`}
+            onClick={() => setActiveTab('track')}
+          >
+            Track
+          </button>
 
-              <button 
-                type="button" 
-                className={`nav-link-btn ${activeTab === 'about' ? 'active' : ''}`}
-                onClick={() => setActiveTab('about')}
-              >
-                About
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            className={`nav-link-btn ${activeTab === 'impact' ? 'active' : ''}`}
+            onClick={() => setActiveTab('impact')}
+          >
+            Impact
+          </button>
 
-          {/* 2. OFFICIAL AUTHORITY (LDA) MENU BAR */}
-          {currentActor === 'official' && (
-            <>
-              <button 
-                type="button" 
-                className={`nav-link-btn ${activeTab === 'official_dashboard' ? 'active' : ''}`}
-                onClick={() => setActiveTab('official_dashboard')}
-              >
-                <BarChart3 size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px' }} />
-                Command Dashboard
-              </button>
-
-              <button 
-                type="button" 
-                className={`nav-link-btn ${activeTab === 'official_pending' ? 'active' : ''}`}
-                onClick={() => setActiveTab('official_pending')}
-              >
-                <Clock size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px' }} />
-                Pending Approvals ({pendingApprovalsCount})
-              </button>
-
-              <button 
-                type="button" 
-                className={`nav-link-btn ${activeTab === 'official_dispatch' ? 'active' : ''}`}
-                onClick={() => setActiveTab('official_dispatch')}
-              >
-                <Users size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px' }} />
-                Dispatch Fleet
-              </button>
-
-              <button 
-                type="button" 
-                className={`nav-link-btn ${activeTab === 'track' ? 'active' : ''}`}
-                onClick={() => setActiveTab('track')}
-              >
-                Inspect Ticket
-              </button>
-
-              <button 
-                type="button" 
-                className={`nav-link-btn ${activeTab === 'impact' ? 'active' : ''}`}
-                onClick={() => setActiveTab('impact')}
-              >
-                City Impact
-              </button>
-            </>
-          )}
-
-          {/* 3. GUEST / UNAUTHENTICATED MENU BAR */}
-          {currentActor === 'guest' && (
-            <>
-              <button 
-                type="button" 
-                className={`nav-link-btn ${activeTab === 'home' ? 'active' : ''}`}
-                onClick={() => setActiveTab('home')}
-              >
-                Home
-              </button>
-
-              <button 
-                type="button" 
-                className={`nav-link-btn ${activeTab === 'report' ? 'active' : ''}`}
-                onClick={() => handleOpenAuth('login')}
-              >
-                <Camera size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px' }} />
-                Snap & Report
-              </button>
-
-              <button 
-                type="button" 
-                className={`nav-link-btn ${activeTab === 'track' ? 'active' : ''}`}
-                onClick={() => setActiveTab('track')}
-              >
-                Track Complaints
-              </button>
-
-              <button 
-                type="button" 
-                className={`nav-link-btn ${activeTab === 'impact' ? 'active' : ''}`}
-                onClick={() => setActiveTab('impact')}
-              >
-                Community Impact
-              </button>
-
-              <button 
-                type="button" 
-                className={`nav-link-btn ${activeTab === 'about' ? 'active' : ''}`}
-                onClick={() => setActiveTab('about')}
-              >
-                About
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            className={`nav-link-btn ${activeTab === 'about' ? 'active' : ''}`}
+            onClick={() => setActiveTab('about')}
+          >
+            About
+          </button>
         </nav>
 
-        {/* ======================================================================
-            AUTHENTICATION NAVIGATION & PROFILE STATE IN NAVBAR
-            ====================================================================== */}
-        <div>
-          {currentUser ? (
-            /* Authenticated User Profile Pill & Sign Out */
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '8px', 
-                  background: 'var(--bg-surface-raised)', 
-                  padding: '5px 14px', 
-                  borderRadius: 'var(--radius-pill)',
-                  border: '1px solid var(--border-subtle)'
-                }}
-              >
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--deep-olive)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.74rem', fontWeight: 800 }}>
-                  {currentUser.avatar || 'U'}
-                </div>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--deep-olive)', lineHeight: '1.2' }}>
-                    {currentUser.name}
+        {/* User Profile & Role Selector (Desktop) + Hamburger (Mobile) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="desktop-only">
+            {currentUser ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: 'var(--bg-surface-raised)',
+                    padding: '4px 12px',
+                    borderRadius: 'var(--radius-pill)',
+                    border: '1px solid var(--border-subtle)',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => setIsAuthOpen(true)}
+                  title="Click to Switch Role or Sign In"
+                >
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--deep-olive)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800 }}>
+                    {currentUser.avatar || 'A'}
                   </div>
-                  <div style={{ fontSize: '0.68rem', color: currentActor === 'official' ? 'var(--deep-olive)' : 'var(--text-muted)', fontWeight: 600 }}>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--deep-olive)' }}>
+                      {currentUser.name}
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                      {currentUser.actorType === 'official' ? 'Official Authority (LDA)' : 'Citizen Snapper'}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="btn-outline-olive"
+                  style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                  onClick={() => setIsAuthOpen(true)}
+                >
+                  Switch Role
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="btn-login-pill"
+                onClick={() => setIsAuthOpen(true)}
+              >
+                Sign In / Select Role
+              </button>
+            )}
+          </div>
+
+          {/* Mobile Hamburger Toggle Button */}
+          <button
+            type="button"
+            className="mobile-hamburger-btn"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle navigation menu"
+          >
+            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
+      </header>
+
+      {/* Mobile Slide-down Navigation Drawer */}
+      {isMobileMenuOpen && (
+        <div className="mobile-drawer-overlay" onClick={() => setIsMobileMenuOpen(false)}>
+          <div className="mobile-drawer-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="mobile-drawer-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="brand-icon-circle" style={{ width: '26px', height: '26px' }}>
+                  <Leaf size={14} />
+                </div>
+                <strong style={{ color: 'var(--deep-olive)', fontSize: '1rem' }}>CivicFix AI Menu</strong>
+              </div>
+              <button 
+                type="button" 
+                className="btn-close-drawer"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Active Role Card inside Mobile Drawer */}
+            <div style={{ padding: '12px', background: 'var(--bg-surface-raised)', borderRadius: 'var(--radius-md)', marginBottom: '14px', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 800, marginBottom: '6px' }}>
+                Logged-in Session
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--deep-olive)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.8rem' }}>
+                  {currentUser?.avatar || 'U'}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--deep-olive)' }}>
+                    {currentUser?.name || 'Citizen User'}
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
                     {currentActor === 'official' ? 'Official Authority (LDA)' : 'Citizen Snapper'}
                   </div>
                 </div>
               </div>
-
-              <button 
-                type="button" 
-                className="btn-outline-olive" 
-                style={{ padding: '6px 12px', fontSize: '0.78rem', color: 'var(--status-high)', display: 'flex', alignItems: 'center', gap: '6px' }}
-                onClick={handleSignOut}
-                title="Sign out of current role"
-              >
-                <LogOut size={13} />
-                <span>Sign Out</span>
-              </button>
-            </div>
-          ) : (
-            /* Dedicated Sign In & Sign Up Buttons on Nav Bar */
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="btn-outline-olive"
-                style={{ padding: '7px 16px', fontSize: '0.84rem' }}
-                onClick={() => handleOpenAuth('login')}
+                style={{ width: '100%', marginTop: '10px', padding: '6px 12px', fontSize: '0.82rem', justifyContent: 'center' }}
+                onClick={() => { setIsAuthOpen(true); setIsMobileMenuOpen(false); }}
               >
-                Sign In
-              </button>
-
-              <button 
-                type="button" 
-                className="btn-olive"
-                style={{ padding: '8px 18px', fontSize: '0.84rem' }}
-                onClick={() => handleOpenAuth('signup')}
-              >
-                Sign Up
+                Switch Role / Change Profile
               </button>
             </div>
-          )}
+
+            {/* Mobile Nav Links */}
+            <div className="mobile-drawer-links">
+              <button
+                type="button"
+                className={`mobile-nav-item ${activeTab === 'home' ? 'active' : ''}`}
+                onClick={() => { setActiveTab('home'); setIsMobileMenuOpen(false); }}
+              >
+                <Home size={18} />
+                <span>Home Page</span>
+              </button>
+
+              <button
+                type="button"
+                className={`mobile-nav-item ${activeTab === 'report' ? 'active' : ''}`}
+                onClick={() => { setActiveTab('report'); setIsMobileMenuOpen(false); }}
+              >
+                <Camera size={18} />
+                <span>Report Civic Issue (Camera)</span>
+              </button>
+
+              <button
+                type="button"
+                className={`mobile-nav-item ${activeTab === 'track' ? 'active' : ''}`}
+                onClick={() => { setActiveTab('track'); setIsMobileMenuOpen(false); }}
+              >
+                <Activity size={18} />
+                <span>Track Complaints & SLAs</span>
+              </button>
+
+              <button
+                type="button"
+                className={`mobile-nav-item ${activeTab === 'impact' ? 'active' : ''}`}
+                onClick={() => { setActiveTab('impact'); setIsMobileMenuOpen(false); }}
+              >
+                <BarChart3 size={18} />
+                <span>Municipal Impact & Map</span>
+              </button>
+
+              <button
+                type="button"
+                className={`mobile-nav-item ${activeTab === 'about' ? 'active' : ''}`}
+                onClick={() => { setActiveTab('about'); setIsMobileMenuOpen(false); }}
+              >
+                <ShieldCheck size={18} />
+                <span>About LDA Project</span>
+              </button>
+            </div>
+          </div>
         </div>
-      </header>
+      )}
 
       {/* ==========================================================================
-          MAIN VIEWS
+          MAIN VIEWS (Matching the 6 Mockup Screens)
           ========================================================================== */}
       <main>
         {/* SCREEN 1: Landing Page */}
         {activeTab === 'home' && (
-          <HeroSection 
-            onStartReport={() => {
-              if (currentUser) {
-                setActiveTab('report');
-              } else {
-                handleOpenAuth('login');
-              }
-            }}
+          <HeroSection
+            onStartReport={() => setActiveTab('report')}
             onTrackReport={() => setActiveTab('track')}
-            onSelectCategory={() => {
-              if (currentUser) {
-                setActiveTab('report');
-              } else {
-                handleOpenAuth('login');
-              }
-            }}
+            onSelectCategory={() => setActiveTab('report')}
           />
         )}
 
-        {/* SCREENS 2 & 3: Citizen Snap & Report with Live Camera */}
+        {/* SCREENS 2 & 3: Report an Issue & AI Analysis Result (Citizen with Live Camera) */}
         {activeTab === 'report' && (
-          currentUser ? (
-            <CitizenPortal 
-              complaints={complaints}
-              onNewComplaint={handleNewComplaint}
-              onSelectTicket={handleSelectTicket}
-              geminiApiKey={geminiApiKey}
-              setGeminiApiKey={setGeminiApiKey}
-              currentActor={currentActor}
-            />
-          ) : (
-            <div className="card-white" style={{ maxWidth: '600px', margin: '40px auto', padding: '40px 32px', textAlign: 'center' }}>
-              <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'var(--sage-green-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: 'var(--deep-olive)' }}>
-                <Camera size={26} />
-              </div>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--deep-olive)', marginBottom: '8px' }}>
-                Sign In to Snap & Report
-              </h2>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: '24px' }}>
-                To record geotagged camera photos, generate multimodal AI analysis, and submit civic issues to Lucknow municipal authorities, please sign in.
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
-                <button type="button" className="btn-olive" onClick={() => handleOpenAuth('login')}>
-                  Sign In
-                </button>
-                <button type="button" className="btn-outline-olive" onClick={() => handleOpenAuth('signup')}>
-                  Create Account
-                </button>
-              </div>
-            </div>
-          )
+          <CitizenPortal
+            complaints={complaints}
+            onNewComplaint={handleNewComplaint}
+            onSelectTicket={handleSelectTicket}
+            geminiApiKey={geminiApiKey}
+            setGeminiApiKey={setGeminiApiKey}
+            currentActor={currentActor}
+          />
         )}
 
-        {/* SCREENS 4 & 5: Track Your Complaint with Role-Aware Action Station */}
+        {/* SCREENS 4 & 5: Track Your Complaint & Complaint Details (With Official Approval & Crew Dispatch) */}
         {activeTab === 'track' && (
-          <TicketTracker 
+          <TicketTracker
             complaints={complaints}
             selectedTicketId={selectedTicketId}
             onSelectTicket={setSelectedTicketId}
             onUpdateStatus={handleUpdateStatus}
             currentActor={currentActor}
-            currentUser={currentUser}
           />
         )}
 
-        {/* SCREEN 6: Official Authority Dashboard (Protected View) */}
-        {(activeTab === 'official_dashboard' || activeTab === 'official_pending' || activeTab === 'official_dispatch') && (
-          currentActor === 'official' ? (
-            <MunicipalDashboard 
-              complaints={complaints}
-              onSelectTicket={handleSelectTicket}
-              onUpdateStatus={handleUpdateStatus}
-              initialView={
-                activeTab === 'official_pending' ? 'pending' : 
-                activeTab === 'official_dispatch' ? 'teams' : 'dashboard'
-              }
-            />
-          ) : (
-            <div className="card-white" style={{ maxWidth: '620px', margin: '40px auto', padding: '40px 32px', textAlign: 'center' }}>
-              <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: 'var(--status-high)' }}>
-                <Lock size={26} />
-              </div>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--deep-olive)', marginBottom: '8px' }}>
-                Official Authority Access Restricted
-              </h2>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: '24px' }}>
-                The Municipal Command Dashboard is strictly reserved for authorized Lucknow Development Authority (LDA) personnel. Sign in with official credentials to review AI triaged tickets and dispatch crew fleets.
-              </p>
-              <button 
-                type="button" 
-                className="btn-olive"
-                onClick={() => handleOpenAuth('login')}
-              >
-                Sign In as Official Authority (LDA)
-              </button>
-            </div>
-          )
-        )}
-
-        {/* COMMUNITY / CITY IMPACT VIEW */}
+        {/* SCREEN 6: Municipal / Admin Dashboard (Official Authority Oversight & Dispatch) */}
         {activeTab === 'impact' && (
-          <MunicipalDashboard 
+          <MunicipalDashboard
             complaints={complaints}
             onSelectTicket={handleSelectTicket}
             onUpdateStatus={handleUpdateStatus}
-            initialView="dashboard"
           />
         )}
 
@@ -513,7 +419,7 @@ export default function App() {
             <h2 style={{ color: 'var(--deep-olive)', marginBottom: '12px' }}>About CivicFix AI</h2>
             <p style={{ color: 'var(--text-secondary)', lineHeight: '1.7', marginBottom: '16px' }}>
               CivicFix AI is an advanced municipal artificial intelligence platform built for the Lucknow Development Authority (LDA).
-              It seamlessly connects two key civic actors through dedicated role-based portals:
+              It seamlessly connects two key civic actors:
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginTop: '16px', marginBottom: '24px' }}>
               <div className="info-sub-box">
@@ -533,20 +439,78 @@ export default function App() {
         )}
       </main>
 
-      {/* Auth Modal with Role Selection, Official Verification, and URL Synchronization */}
-      <AuthModal 
+      {/* Auth Modal with Interactive Role Selector */}
+      <AuthModal
         isOpen={isAuthOpen}
-        onClose={handleCloseAuth}
-        initialMode={authModalMode}
-        onModeChange={handleAuthModeChange}
-        onLoginSuccess={handleLoginSuccess}
+        onClose={() => setIsAuthOpen(false)}
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          setCurrentActor(user.actorType || 'citizen');
+          if (user.actorType === 'official') {
+            setActiveTab('impact');
+          } else {
+            setActiveTab('report');
+          }
+        }}
       />
 
       {/* Professional Civic Enterprise Footer */}
-      <Footer 
+      <Footer
         onNavigate={(tab) => setActiveTab(tab)}
-        onOpenAuth={() => handleOpenAuth('login')}
+        onOpenAuth={() => setIsAuthOpen(true)}
       />
+
+      {/* Mobile Fixed Bottom Navigation Bar (iOS / Android Native Feel) */}
+      <nav className="mobile-bottom-bar" aria-label="Mobile Navigation">
+        <button
+          type="button"
+          className={`mobile-tab-btn ${activeTab === 'home' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('home'); setIsMobileMenuOpen(false); }}
+        >
+          <Home size={20} />
+          <span>Home</span>
+        </button>
+
+        <button
+          type="button"
+          className={`mobile-tab-btn ${activeTab === 'track' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('track'); setIsMobileMenuOpen(false); }}
+        >
+          <Activity size={20} />
+          <span>Track</span>
+        </button>
+
+        {/* Center Primary Action: Camera / Snap Report */}
+        <button
+          type="button"
+          className="mobile-center-snap-btn"
+          onClick={() => { setActiveTab('report'); setIsMobileMenuOpen(false); }}
+          title="Snap Civic Issue"
+        >
+          <div className="snap-btn-inner">
+            <Camera size={22} />
+          </div>
+          <span>Report</span>
+        </button>
+
+        <button
+          type="button"
+          className={`mobile-tab-btn ${activeTab === 'impact' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('impact'); setIsMobileMenuOpen(false); }}
+        >
+          <BarChart3 size={20} />
+          <span>{currentActor === 'official' ? 'Command' : 'Impact'}</span>
+        </button>
+
+        <button
+          type="button"
+          className="mobile-tab-btn"
+          onClick={() => { setIsAuthOpen(true); setIsMobileMenuOpen(false); }}
+        >
+          <User size={20} />
+          <span>Profile</span>
+        </button>
+      </nav>
     </div>
   );
 }
