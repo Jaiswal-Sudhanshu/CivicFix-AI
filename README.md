@@ -5,6 +5,7 @@
 [![React](https://img.shields.io/badge/React-19.3-61DAFB.svg)](https://react.dev)
 [![Leaflet](https://img.shields.io/badge/Leaflet-OpenStreetMap-199900.svg)](https://leafletjs.com)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Jaiswal-Sudhanshu/CivicFix-AI)
 
 **CivicFix AI** is an advanced municipal artificial intelligence and civic defect management platform engineered for the **Lucknow Development Authority (LDA)**. It connects citizens and municipal authorities through two dedicated role-specific portals:
 1. **Citizen Snapper**: Live camera capture, interactive Leaflet GPS geotagging, multimodal AI defect triage, and evidence confidence tracking.

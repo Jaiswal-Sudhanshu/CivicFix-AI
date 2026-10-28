@@ -93,7 +93,8 @@ class EvidenceConsistencyService:
                         "responseMimeType": "application/json"
                     }
                 }
-                resp = requests.post(url, json=payload, timeout=6.0)
+                headers = {"Content-Type": "application/json", "x-goog-api-key": active_key.strip()}
+                resp = requests.post(url, json=payload, headers=headers, timeout=6.0)
                 if resp.status_code == 200:
                     data = resp.json()
                     raw = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")

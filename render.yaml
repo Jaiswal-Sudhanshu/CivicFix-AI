@@ -15,7 +15,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.8
       - key: GEMINI_API_KEY
-        sync: false # Set in Render Dashboard for live vision LLM triage
+        sync: false
       - key: ENVIRONMENT
         value: production
 
@@ -35,3 +35,5 @@ services:
           type: web
           name: civicfix-backend
           property: host
+      - key: VITE_GEMINI_API_KEY
+        sync: false

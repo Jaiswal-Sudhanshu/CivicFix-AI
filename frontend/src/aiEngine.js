@@ -47,8 +47,9 @@ export async function analyzeCivicWithLLM({
   apiKey = "",
   existingComplaints = []
 }) {
-  // If an active Gemini API key is provided, invoke Gemini Multimodal 1.5/2.0 Flash
-  if (apiKey && apiKey.trim().length > 10) {
+  // If an active Gemini API key is provided, invoke Gemini Multimodal Flash
+  const activeKey = (apiKey || import.meta.env?.VITE_GEMINI_API_KEY || "").trim();
+  if (activeKey && activeKey.length > 10) {
     try {
       const parts = [
         {
@@ -89,10 +90,13 @@ Respond ONLY in strict, valid JSON without markdown fences, with these exact key
       }
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeKey}`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "x-goog-api-key": activeKey
+          },
           body: JSON.stringify({
             contents: [{ parts }],
             generationConfig: {
